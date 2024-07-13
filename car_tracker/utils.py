@@ -59,3 +59,14 @@ def get_parking_spot_boxes(connceted_components):
         slots.append([x1, y1, w, h])
 
     return slots
+
+def calc_dif(im1, im2):
+    """
+    computes the mean difference in pixcels of im1 and im2
+    Args:
+        im1: first image
+        im2: second image
+    Returns:
+        returns difference in mean value between im1 and im2
+    """
+    return np.mean(np.mean(im1) - np.mean(im2))

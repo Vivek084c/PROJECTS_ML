@@ -1,8 +1,12 @@
 import cv2
-from utils import get_parking_spot_boxes, is_empty
+from utils import get_parking_spot_boxes, is_empty, calc_dif
+import numpy as np
+import matplotlib.pyplot as plt
+
+
 
 #defining the input video path
-video_path = "dataset/data/parking_1920_1080.mp4"
+video_path = "dataset/data/parking_1920_1080_loop.mp4"
 
 #definig the mask path
 mask_path = "dataset/mask_1920_1080.png"
@@ -19,6 +23,8 @@ spots = get_parking_spot_boxes(connexted_componenets)
 #performing classification in every second not 30 times in every second
 step = 30
 spot_state = [None for j in spots]    
+diffs = [None for j in spots]   
+previous_frame = None
 
 
 isFrameAvailabe = True
@@ -27,11 +33,27 @@ while isFrameAvailabe:
     #reading the frame
     isFrameAvailabe, frame = cap.read()
 
-    if frame_num % step == 0:
-
-
+    if frame_num % step == 0 and previous_frame is not None:
         #itterating over the spots
         for spot_index, spot in enumerate(spots):
+            x1, y1, w, h = spot
+            
+            #extracting a paticular box from frame
+            spot_crop = frame[y1: y1+h, x1: x1+w, :]
+
+            diffs[spot_index] =  calc_dif(spot_crop, previous_frame[y1: y1+h, x1: x1+w, :])
+       
+        
+
+    if frame_num % step == 0:
+        if previous_frame is None:
+            arr = range(len(spots))
+        else:
+            arr = [j for j in np.argsort(diffs) if diffs[j] / np.amax(diffs) > 0.4][::-1]
+
+        #itterating over the spots
+        for spot_index in arr:
+            spot = spots[spot_index]
             x1, y1, w, h = spot
             
             #extracting a paticular box from frame
@@ -41,6 +63,8 @@ while isFrameAvailabe:
             spot_status = is_empty(spot_crop)
             spot_state[spot_index] = spot_status
 
+    if frame_num % step == 0:
+        previous_frame = frame.copy()
 
     for spot_index, spot in enumerate(spots):
         spot_status = spot_state[spot_index]
@@ -51,8 +75,10 @@ while isFrameAvailabe:
         else:
             #marking spot red if it is not empty
             cv2.rectangle(frame, (x1, y1), (x1 + w, y1 + h), (0, 0, 255), 2)
-            
-    
+    cv2.rectangle(frame, (80, 20), (550, 80), (0, 0, 0), -1)     
+    cv2.putText(frame, "Available spots: {} / {}".format(str(sum(spot_state)), str(len(spot_state))), (100, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+
     cv2.namedWindow("frame", cv2.WINDOW_NORMAL)
     #visualising the frame
     cv2.imshow("frame",  frame)
