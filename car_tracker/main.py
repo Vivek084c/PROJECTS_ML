@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 #defining the input video path
-video_path = "dataset/data/parking_1920_1080_loop.mp4"
+video_path = "dataset/data/parking_1920_1080.mp4"
 
 #definig the mask path
 mask_path = "dataset/mask_1920_1080.png"
